@@ -1,0 +1,243 @@
+{
+  "name": "deck-storyline evals",
+  "description": "With/without skill comparison for storyline design tasks. Each case names an input prompt, expected signals the skill should produce, and bad signals the skill must NOT produce (typically visual-composition bleed, which belongs to a downstream skill). Every case also carries a `grading_rubric` (deterministic checks a subagent grader can apply) and a `gold_reference_spec` (an acceptable output shape, in YAML embedded as a JSON string).",
+  "cases": [
+    {
+      "id": "case-1-proposal-deck",
+      "input": "We want to propose that our team adopt vendor X for the internal data platform. I have benchmark numbers, three competitor quotes, and interview notes with two teams currently using vendor X. Help me put together the deck.",
+      "expected_signals": [
+        "audience_and_desired_outcome_named",
+        "governing_question_present_and_phrased_as_a_question",
+        "governing_thought_stated_as_one_sentence",
+        "epistemic_labels_used_fact_inference_hypothesis_unknown",
+        "action_titles_state_takeaway_not_topic",
+        "storyline_table_present_with_3_or_more_rows",
+        "key_objections_section_present_with_2_to_4_items",
+        "open_evidence_gaps_section_present",
+        "handoff_to_slide_skill_stated"
+      ],
+      "bad_signals": [
+        "slide_layout_specified",
+        "font_or_color_choices",
+        "pptx_or_marp_code_emitted",
+        "visual_composition_described_in_detail",
+        "false_certainty_on_unverified_claims"
+      ],
+      "notes": "Classic proposal/approval deck. Should produce a filled storyline template and stop. Vendor benchmark numbers are facts; adoption impact projections should be labeled Inference or Hypothesis.",
+      "grading_rubric": {
+        "deck_thesis_block_present": "output contains all of these headings verbatim: 'Deck thesis', 'Storyline', 'Key objections and risks', 'Open evidence gaps'",
+        "governing_question_is_a_question": "the line labeled 'Governing question' ends with '?' and mentions vendor adoption (regex-friendly: matches /adopt|vendor|recommendation/i)",
+        "storyline_table_rows_have_action_titles": "the storyline table has >=3 non-empty rows and no 'Action title' cell is a bare topic label (regex reject: /^(overview|introduction|market analysis|background|summary)$/i)",
+        "epistemic_labels_present_per_row": "each storyline row's Status column contains one of: Fact, Inference, Hypothesis, Unknown",
+        "handoff_stated": "output contains substring 'presentation-architect' OR 'rendering skill' near the end (last 20 lines)",
+        "no_visual_composition_bleed": "output MUST NOT contain any of: 'font', 'color', '#RRGGBB', 'slide layout', 'pptx', 'marp', 'chart type:', 'palette', 'typography'"
+      },
+      "gold_reference_spec": "# Deck thesis\n- Audience: platform engineering leads + budget owner\n- Current state: uses in-house ETL; aware of vendor X but not evaluated\n- Desired outcome: approval to pilot vendor X for 60 days\n- Why this matters now: contract renewal window closes in 6 weeks\n- Governing question: Should we adopt vendor X for the internal data platform?\n- Governing thought: Vendor X meets our benchmark targets at lower TCO than the two competing quotes, and two peer teams report stable production use, so we should run a 60-day pilot.\n- Epistemic status of governing thought: Inference (benchmarks are Fact; TCO delta is Inference; peer-team stability is Fact within 6-month window)\n\n# Storyline\n| # | Action title | Role | Evidence | Visual idea | Status |\n|---|---|---|---|---|---|\n| 1 | Renewal deadline forces a decision in 6 weeks | opening | contract doc | text | Fact |\n| 2 | Vendor X is 30% faster on our workload than incumbent | evidence | bench.csv | bar chart | Fact |\n| 3 | Two peer teams report stable production use | evidence | interview notes | quote block | Fact |\n| 4 | Adoption risk is migration cost, not runtime cost | objection | cost model | text | Inference |\n| 5 | Recommend 60-day pilot with defined exit criteria | recommendation | plan draft | text | Inference |\n\n# Key objections and risks\n- Objection 1: Migration cost may exceed savings -> addressed in beat #4\n- Objection 2: Vendor lock-in -> addressed by pilot exit criteria in beat #5\n\n# Open evidence gaps\n- Gap 1: Security review not yet requested -> blocking before full rollout, caveat for pilot\n\n# Handoff notes\n- Hand off to presentation-architect for slide composition; budget owner is time-constrained (5 min live + leave-behind)."
+    },
+    {
+      "id": "case-2-research-deck",
+      "input": "I need to present my paper's results to my lab next week. 20 min slot. The main finding is that method A beats method B on three benchmarks but fails on a fourth. Draft the deck for me.",
+      "expected_signals": [
+        "governing_question_is_research_shaped",
+        "epistemic_label_on_negative_result_is_Fact_or_Inference_not_omitted",
+        "limitation_beat_present_in_storyline_with_negative_result_row",
+        "action_titles_state_takeaway_not_topic",
+        "necessity_test_applied_to_appendix_candidates",
+        "handoff_to_slide_skill_stated"
+      ],
+      "bad_signals": [
+        "chart_type_prescribed_per_slide",
+        "specific_matplotlib_or_plotly_code",
+        "slide_master_or_template_selected",
+        "negative_result_hidden_or_softened_beyond_evidence"
+      ],
+      "notes": "Research/technical deck. Skill must handle the fourth-benchmark failure honestly with an epistemic label, not omit or overclaim. Visual composition should not appear.",
+      "grading_rubric": {
+        "negative_result_row_exists": "at least one storyline row's Action title mentions the fourth benchmark failure OR limitation (regex: /fail|not\\s+beat|underperform|limitation|does\\s+not/i)",
+        "negative_result_not_softened": "the negative-result row's Action title MUST NOT contain hedging that erases the result (regex reject: /promising|nearly|almost matches|comparable/i unless followed by explicit numeric evidence)",
+        "governing_question_research_shaped": "the governing question mentions when/whether/under-what-conditions method A works (regex: /when|whether|under what|which|why/i)",
+        "necessity_test_marker": "output contains phrase 'necessity test' OR an 'Appendix candidates' section with items labeled 'removable' / 'if removed, main argument stands' / equivalent",
+        "no_code_bleed": "output MUST NOT contain code fences with 'matplotlib', 'plotly', 'seaborn', 'plt.', 'ax.' , 'go.Figure', or 'import '"
+      },
+      "gold_reference_spec": "# Deck thesis\n- Audience: my lab (PI + 6 grad students, mixed subfields)\n- Current state: aware method A exists; do not know benchmark results\n- Desired outcome: agree on the boundary of when method A is preferable\n- Governing question: On which class of benchmarks does method A outperform method B, and why does it fail on the fourth?\n- Governing thought: Method A beats B on structured-input benchmarks (1-3) but degrades on benchmark 4 because it relies on an assumption benchmark 4 violates.\n- Epistemic status: Fact for benchmarks 1-3; Inference for the causal explanation of benchmark 4\n\n# Storyline\n| # | Action title | Role | Evidence | Visual idea | Status |\n|---|---|---|---|---|---|\n| 1 | Method A wins on 3 of 4 benchmarks | evidence | results.csv | comparison | Fact |\n| 2 | Benchmark 4 violates the structured-input assumption | limitation | data schema | text | Inference |\n| 3 | The failure mode maps to a known class we can name | implication | analysis notes | text | Inference |\n| 4 | Next: extend method A to unstructured inputs | next-action | roadmap | text | Hypothesis |\n\n# Open evidence gaps\n- Gap 1: We have not tested benchmarks 5-8 in the same family -> caveat, not blocking\n\n# Handoff notes\n- Hand off to presentation-architect. Live 20-min slot; visuals should carry the comparison and the failure mode."
+    },
+    {
+      "id": "case-3-status-meeting-deck",
+      "input": "Weekly status update for the platform migration project. Steering committee, 15 minutes. Things are behind on the database side but ahead on the API side. Help me prep the deck.",
+      "expected_signals": [
+        "audience_named_as_steering_committee",
+        "storyline_uses_status_pattern_what_changed_implication_risks_next_actions",
+        "asks_and_next_actions_beat_present_with_named_owners_or_dates",
+        "governing_question_matches_committee_decision_scope",
+        "risks_and_objections_section_present"
+      ],
+      "bad_signals": [
+        "generic_progress_bars_or_gantt_visuals_prescribed",
+        "traffic_light_colors_specified",
+        "slide_count_optimized_arbitrarily",
+        "asks_omitted_or_deferred"
+      ],
+      "notes": "Meeting/status deck. Skill should reference meeting-decks.md pattern implicitly and land on decisions/asks, not just a report. No visual composition.",
+      "grading_rubric": {
+        "status_pattern_visible": "storyline rows include beats matching all four: what changed, implication, risks, next actions (each may be one row or grouped)",
+        "asks_beat_has_actor": "at least one row with role in {ask, next-action, recommendation} names an owner OR a date (regex: /owner|by [A-Z]|by \\d|due|decision needed/i)",
+        "governing_question_decision_scoped": "governing question mentions what the committee must decide, approve, or unblock (regex: /decide|approve|unblock|reprioritize|escalate/i)",
+        "no_visual_prescription": "output MUST NOT prescribe specific chart types or colors (regex reject: /traffic light|red\\/amber\\/green|gantt|progress bar/i)",
+        "both_sides_named": "storyline explicitly names both the database-side slippage and the API-side lead (regex: /database/i AND /api/i, both present)"
+      },
+      "gold_reference_spec": "# Deck thesis\n- Audience: steering committee (7 members, mixed technical depth)\n- Current state: last update was 2 weeks ago; DB slippage flagged then\n- Desired outcome: committee approves DB scope trim OR resource shift\n- Governing question: Should we trim database scope or add DB resources to hold the July cutover?\n- Governing thought: API is ahead; DB is 3 weeks behind; holding the July cutover requires either a scope trim of the reporting tables or one more DB engineer for 4 weeks.\n\n# Storyline\n| # | Action title | Role | Evidence | Visual idea | Status |\n|---|---|---|---|---|---|\n| 1 | API is 2 weeks ahead of plan | context | burndown | text | Fact |\n| 2 | DB is 3 weeks behind due to schema-review loop | context | change log | text | Fact |\n| 3 | July cutover slips 2 weeks unless we act | implication | plan | text | Inference |\n| 4 | Two options: trim reporting tables OR add 1 DB eng | recommendation | est.md | text | Inference |\n| 5 | Ask: committee picks one option this meeting | next-action | - | text | Fact |\n\n# Key objections and risks\n- Objection: Adding an engineer may not accelerate a review-bound task -> acknowledge, prefer scope trim\n\n# Handoff notes\n- Hand off to presentation-architect. Live, 15 min, decision-oriented."
+    },
+    {
+      "id": "case-4-decision-deck-with-uncertainty",
+      "input": "Exec wants a recommendation: build vs buy for our authentication system. I have partial data on build cost, one vendor demo, and no security review yet. Deck due tomorrow.",
+      "expected_signals": [
+        "governing_question_is_decision_shaped_build_vs_buy",
+        "options_and_criteria_present_with_at_least_2_options",
+        "recommendation_present_with_epistemic_status",
+        "open_evidence_gaps_section_lists_missing_security_review",
+        "action_titles_state_recommendation_where_evidence_supports_it"
+      ],
+      "bad_signals": [
+        "false_certainty_despite_missing_security_review",
+        "slide_visual_composition_included",
+        "unlabeled_hypothesis_treated_as_fact",
+        "recommendation_deferred_when_evidence_supports_a_call"
+      ],
+      "notes": "Decision deck under uncertainty. Must recommend where evidence supports it and label gaps explicitly. Do not manufacture confidence to sound decisive.",
+      "grading_rubric": {
+        "recommendation_present_with_status": "output contains a beat whose Role is 'recommendation' AND its Status column is one of {Fact, Inference, Hypothesis}",
+        "security_review_listed_as_gap": "the 'Open evidence gaps' section contains a bullet mentioning security review (regex: /security\\s+review/i) with a disposition label (blocking / caveat / follow-up)",
+        "options_enumerated": "at least 2 distinct options (build, buy) appear as separate rows or in an 'Options and criteria' block (regex: both /build/i and /buy/i present)",
+        "no_false_certainty": "the recommendation Action title MUST NOT be labeled Status=Fact if the deck-thesis Epistemic status is Inference or Hypothesis (consistency check)",
+        "recommendation_not_deferred_without_reason": "if the recommendation is 'defer', it must cite the specific missing evidence, not a vague 'need more data'"
+      },
+      "gold_reference_spec": "# Deck thesis\n- Audience: CTO + VP Eng\n- Current state: aware of build path; briefed once on vendor V\n- Desired outcome: pick build or buy this week\n- Governing question: Should we build the authentication system in-house or buy vendor V?\n- Governing thought: Buy vendor V, contingent on passing the security review that we launch this week; build cost estimate exceeds buy 3-year TCO by roughly 2x.\n- Epistemic status of governing thought: Inference (build cost is partial; security review is Unknown)\n\n# Storyline\n| # | Action title | Role | Evidence | Visual idea | Status |\n|---|---|---|---|---|---|\n| 1 | Two viable options: build vs buy vendor V | opening | scope doc | text | Fact |\n| 2 | Build cost estimate: ~$1.4M over 3y (partial) | evidence | cost model | text | Inference |\n| 3 | Vendor V 3y TCO: ~$650k (demo + list price) | evidence | quote | text | Inference |\n| 4 | Recommend buy V, conditional on security review | recommendation | - | text | Inference |\n| 5 | Ask: fund security review this week | next-action | - | text | Fact |\n\n# Open evidence gaps\n- Gap 1: Security review of vendor V not yet done -> blocking for final commit, not for direction\n- Gap 2: Build cost line items for compliance not scoped -> caveat\n\n# Handoff notes\n- Hand off to presentation-architect. Exec audience, prefers a one-page summary + backup."
+    },
+    {
+      "id": "case-5-kickoff-deck",
+      "input": "Project kickoff for a new customer-analytics initiative. Cross-functional room: eng, product, sales, data science, exec sponsor. Help me build the kickoff deck.",
+      "expected_signals": [
+        "audience_split_across_functions_acknowledged",
+        "governing_question_frames_scope_and_success",
+        "storyline_covers_why_now_what_scope_how_who_when",
+        "open_evidence_gaps_section_present_for_unresolved_scope",
+        "handoff_to_slide_skill_stated"
+      ],
+      "bad_signals": [
+        "template_slide_layouts_specified",
+        "logo_or_brand_placement_discussed",
+        "hero_image_or_stock_photo_recommended",
+        "arbitrary_three_pillar_structure_forced"
+      ],
+      "notes": "Kickoff deck. Should not force a rigid framework (three pillars, 10-slide template) but shape structure around what this specific audience needs to agree on.",
+      "grading_rubric": {
+        "cross_functional_ack": "output names at least 3 of {eng, product, sales, data science, exec sponsor} explicitly in Audience OR in storyline rows",
+        "why_now_what_how_coverage": "storyline rows collectively cover all of: why now, what (scope), how (approach), who (owner), when (timeline)",
+        "no_forced_three_pillar": "output MUST NOT emit exactly 3 sibling rows labeled 'pillar' or a 3-column framework label (regex reject: /three pillars|3 pillars/i)",
+        "no_brand_visual_bleed": "output MUST NOT mention logo, brand, stock photo, hero image, template",
+        "open_scope_gaps_flagged": "the 'Open evidence gaps' section is non-empty and at least one gap is about scope or success metric"
+      },
+      "gold_reference_spec": "# Deck thesis\n- Audience: cross-functional room (eng, product, sales, DS, exec sponsor)\n- Current state: initiative announced by exec; scope not agreed across functions\n- Desired outcome: leave the room with agreed scope, owner list, and phase-1 timeline\n- Governing question: What is in scope for phase 1 of the customer-analytics initiative, and who owns what by when?\n- Governing thought: Phase 1 delivers the churn-scoring model to sales in 10 weeks; scope excludes real-time inference and pricing analytics.\n\n# Storyline\n| # | Action title | Role | Evidence | Visual idea | Status |\n|---|---|---|---|---|---|\n| 1 | Why now: sales asked for churn signal in QBR | context | QBR notes | text | Fact |\n| 2 | Phase 1 scope: churn scoring, batch, weekly | scope | draft SOW | text | Inference |\n| 3 | Approach: reuse feature store; new model service | how | arch sketch | diagram | Inference |\n| 4 | Owners: DS-lead model, Eng-lead pipeline, PM-lead intake | who | RACI | text | Fact |\n| 5 | Timeline: 10 weeks, review gates at 3/6/10 | when | plan | text | Inference |\n| 6 | Out of scope for phase 1: real-time, pricing | scope | - | text | Fact |\n\n# Open evidence gaps\n- Gap 1: Success metric definition not agreed with sales -> blocking for phase-1 signoff\n- Gap 2: Data retention policy for scoring outputs -> follow-up\n\n# Handoff notes\n- Hand off to presentation-architect. Cross-functional live 45-min working session."
+    },
+    {
+      "id": "case-6-near-miss-visual-composition-request",
+      "input": "Can you make the title slide look cleaner and pick a better chart type for slide 4? Here's the current deck.",
+      "expected_signals": [
+        "skill_declines_or_redirects_explicitly",
+        "handoff_to_presentation_architect_or_rendering_skill_named_by_name",
+        "reason_given_that_this_is_visual_composition_not_storyline"
+      ],
+      "bad_signals": [
+        "skill_produces_visual_composition_anyway",
+        "font_or_color_choices",
+        "chart_type_prescribed",
+        "storyline_regenerated_when_only_visual_help_was_asked"
+      ],
+      "notes": "Near-miss / boundary case. User is asking for visual polish on an existing deck. This skill must recognize the request is out of scope and hand off. Producing a storyline here would be over-reach.",
+      "grading_rubric": {
+        "explicit_decline": "output contains a decline sentence (regex: /out of scope|not this skill|belongs to|hand(ing)? off|use .* instead/i)",
+        "names_correct_handoff_target": "output contains the substring 'presentation-architect' (correct handoff for visual composition)",
+        "no_storyline_produced": "output MUST NOT contain the heading 'Storyline' with a filled table (>=2 rows). A brief mention that a storyline was NOT generated is fine.",
+        "no_visual_prescription_in_reply": "output MUST NOT prescribe a chart type, font, or color (regex reject: /use a (bar|line|pie) chart|font-family|hex code|#[0-9a-f]{3,6}/i)",
+        "reason_stated": "output states WHY it declines (not just refusal): mentions storyline vs visual composition distinction"
+      },
+      "gold_reference_spec": "This request is about visual composition (chart type, title-slide layout), not storyline design. The deck-storyline skill does not handle chart selection, typography, or slide-level layout choices.\n\nHand off to the `presentation-architect` skill, which owns:\n- visual grammar selection (chart type by data relationship)\n- slide-level composition (focal point, reading order, emphasis)\n- text density and mode calibration\n\nIf the underlying argument on slide 4 still needs sharpening (e.g., action title is a topic label, not a takeaway), come back to `deck-storyline` first. Otherwise, `presentation-architect` is the right next step."
+    },
+    {
+      "id": "case-7-retrospective-deck",
+      "input": "Team retrospective for the Q2 launch. 10 people attended, mostly engineers plus PM and QA. I want to walk through what went well, what didn't, and what we'll change next quarter.",
+      "expected_signals": [
+        "governing_question_frames_the_change_the_team_should_agree_on",
+        "storyline_covers_went_well_did_not_go_well_and_change_next",
+        "action_titles_state_specific_change_not_generic_lesson",
+        "epistemic_labels_used_on_hypothesized_causes",
+        "handoff_to_slide_skill_stated"
+      ],
+      "bad_signals": [
+        "generic_start_stop_continue_template_forced_without_content",
+        "vague_action_titles_like_improve_communication",
+        "visual_composition_included",
+        "hypothesized_cause_stated_as_fact"
+      ],
+      "notes": "Boundary case: retrospective archetype not covered explicitly by the current test set. Skill should treat it like a decision deck for the team's next-quarter behavior, not as a report.",
+      "grading_rubric": {
+        "governing_question_is_change_shaped": "governing question mentions what the team should change/keep/stop next quarter (regex: /change|keep|stop|start|next\\s+quarter|adopt|abandon/i) and ends with '?'",
+        "three_beats_present": "storyline rows collectively cover all three of: went well, did not go well, change/commitment (each may be one or more rows)",
+        "action_titles_specific": "at least 3 storyline rows have Action titles that name a concrete artifact, process, or metric (regex reject: /communication|collaboration|teamwork|synergy|process improvement/ as the whole title)",
+        "causes_labeled_epistemically": "any 'why it happened' row is labeled Inference or Hypothesis, not Fact (unless the row cites direct data)",
+        "no_visual_composition": "output MUST NOT prescribe layout, font, color, chart type, or slide count"
+      },
+      "gold_reference_spec": "# Deck thesis\n- Audience: launch team (7 engineers, 1 PM, 1 QA, 1 EM)\n- Current state: launch shipped 1 week late; team morale mixed\n- Desired outcome: agree on 2-3 concrete process changes for Q3\n- Governing question: Which 2-3 changes should we commit to for Q3 to avoid a repeat of the Q2 slip?\n- Governing thought: The Q2 slip was driven by late API contract changes; committing to a contract freeze at week 4 and a QA-embed in sprint 2 would prevent the two largest delay classes we observed.\n- Epistemic status: Inference on the causal claim (based on 3 slippage tickets), Fact on the ship date and QA finding count\n\n# Storyline\n| # | Action title | Role | Evidence | Visual idea | Status |\n|---|---|---|---|---|---|\n| 1 | Q2 shipped 1 week late; scope held | context | plan vs actual | text | Fact |\n| 2 | Went well: on-call load stayed flat post-launch | went-well | pager stats | text | Fact |\n| 3 | Did not go well: 3 late API contract changes | did-not | ticket log | text | Fact |\n| 4 | Likely cause: contracts finalized in-sprint | inference | retro notes | text | Inference |\n| 5 | Commit: freeze API contract by week 4 | change | - | text | Inference |\n| 6 | Commit: embed QA in sprint 2 planning | change | - | text | Inference |\n\n# Open evidence gaps\n- Gap 1: We have 3 slippage cases; sample too small to generalize -> caveat, revisit after Q3\n\n# Handoff notes\n- Hand off to presentation-architect. Working session format, low-formality, 45 min."
+    },
+    {
+      "id": "case-8-one-pager-memo",
+      "input": "Can you help me write a one-page memo to my manager explaining why we should sunset the legacy reporting service?",
+      "expected_signals": [
+        "skill_declines_because_not_a_deck",
+        "reason_given_that_a_one_page_memo_is_not_a_multi_slide_argument",
+        "handoff_or_suggestion_named_write_a_memo_or_use_general_writing_skill"
+      ],
+      "bad_signals": [
+        "storyline_table_generated_anyway",
+        "slide_sequence_produced_for_a_memo",
+        "deck_thesis_template_filled_for_a_memo",
+        "handoff_to_presentation_architect_when_no_deck_is_needed"
+      ],
+      "notes": "Boundary case: user asks for a memo, not a deck. Skill scope excludes single messages / short notes. Should decline and re-anchor on what output form fits the task.",
+      "grading_rubric": {
+        "explicit_decline_as_out_of_scope": "output contains a decline sentence naming 'memo' or 'not a deck' (regex: /memo.*not|not (a )?deck|single (message|note)/i)",
+        "no_storyline_table": "output MUST NOT include the heading 'Storyline' followed by a filled markdown table",
+        "no_deck_thesis_block": "output MUST NOT include the heading '# Deck thesis' with filled fields",
+        "no_presentation_architect_handoff": "output MUST NOT recommend 'presentation-architect' as the next step (because no deck is being produced)",
+        "constructive_redirect": "output offers a next step (write the memo directly, use a different skill, or asks whether the memo should later become a deck)"
+      },
+      "gold_reference_spec": "This is a one-page memo, not a deck. The `deck-storyline` skill designs multi-slide arguments and is not the right tool for a single-page written note.\n\nDo NOT hand off to `presentation-architect` either -- that skill also assumes a deck output.\n\nSuggested next step: draft the memo directly in prose. If the memo will later be presented (e.g., you plan to walk the room through it as slides), come back to `deck-storyline` at that point with the memo as source material."
+    },
+    {
+      "id": "case-9-author-owned-question",
+      "input": "I have three months of research findings on internal developer productivity. Help me figure out how to structure MY presentation of the findings.",
+      "expected_signals": [
+        "skill_reanchors_on_audience_question_not_author_question",
+        "governing_question_phrased_from_audience_decision_perspective",
+        "prompts_user_to_name_intended_audience_and_desired_outcome",
+        "action_titles_written_as_audience_takeaways_not_topic_list_of_findings",
+        "handoff_to_slide_skill_stated"
+      ],
+      "bad_signals": [
+        "governing_question_is_how_do_I_organize_my_findings",
+        "storyline_orders_findings_by_chronology_of_the_research",
+        "action_titles_are_topic_labels_naming_finding_categories",
+        "audience_left_unnamed"
+      ],
+      "notes": "Boundary case: user frames the deck around themselves. Skill must re-anchor on the audience concern per the SKILL.md rule that governing questions correspond to real audience concerns, not author reporting.",
+      "grading_rubric": {
+        "audience_reanchor_explicit": "output contains a sentence that re-anchors on the audience (regex: /audience|who is (this|the deck) for|whose decision|what should they/i) BEFORE any storyline table",
+        "governing_question_is_not_author_shaped": "governing question MUST NOT match /how do I (structure|present|organize) my/i and MUST be about an audience decision or belief change",
+        "audience_and_desired_outcome_prompted": "output either fills the Audience and Desired outcome lines or explicitly asks the user to specify them before storyline generation continues",
+        "action_titles_are_takeaways": "at least 3 storyline rows (if generated) have Action titles that state a takeaway, not a finding category label (reject: 'Findings on X', 'Category Y', 'Section Z')",
+        "handoff_stated_only_if_storyline_completed": "if the skill returns a filled storyline, it names 'presentation-architect' as the handoff; if it stops to ask for audience clarification, no handoff needed"
+      },
+      "gold_reference_spec": "Before we can structure the deck, we need to anchor on the audience, not the findings. 'How do I present my findings' is an author-shaped question; the deck has to answer an audience-shaped question.\n\nBefore I fill the storyline template, please confirm:\n- Audience: who will see this? (eng leadership? platform team? whole R&D?)\n- Current state: what do they believe about developer productivity today?\n- Desired outcome: what decision, belief, or action should change?\n\nOnce those are named, the governing question typically reshapes into something like:\n- 'Which two productivity interventions should we invest in for H2?'\nrather than\n- 'How do I organize my findings?'\n\nProvisional draft, assuming eng leadership as audience:\n\n# Deck thesis\n- Audience: eng leadership (VP + 4 directors)\n- Current state: aware productivity is a concern; no shared view of biggest lever\n- Desired outcome: pick 2 interventions to fund in H2\n- Governing question: Which two interventions from the study should we fund in H2 to move developer productivity most?\n- Governing thought: Fund CI-speed reduction and on-call rotation redesign; together they address the two largest observed drags on flow.\n\n# Storyline\n| # | Action title | Role | Evidence | Visual idea | Status |\n|---|---|---|---|---|---|\n| 1 | Two drags dominate: CI wait time and on-call load | evidence | study.csv | ranked bar | Fact |\n| 2 | CI-speed fix costs less, ships faster | recommendation | est.md | text | Inference |\n| 3 | On-call redesign is higher-leverage over 12 months | recommendation | model | text | Inference |\n\n# Handoff notes\n- Hand off to presentation-architect once audience is confirmed."
+    }
+  ]
+}

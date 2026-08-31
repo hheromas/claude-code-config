@@ -1,0 +1,20 @@
+# パス定義・Git運用
+
+## 固定パス
+
+```bash
+PROJECT_ROOT="{{PROJECT_ROOT}}"
+ORDER="$PROJECT_ROOT/order"
+```
+
+## git status 確認（絶対パス必須）
+
+```bash
+cd {{PROJECT_ROOT}}/order && git status
+```
+
+## Git 運用ルール
+
+- ブランチを切る: 作業開始時は必ずブランチを作成
+- 細かくコミット: 論理的な単位で細かくコミット
+- タスク完了時に全リポジトリを確認しコミット

@@ -1,0 +1,79 @@
+// Claude Code global settings template — Company mode
+// Usage: strip comments, replace {{HOME}} with $HOME, write to ~/.claude/settings.json
+//
+// Company mode — no interactive integrations, no hooks; add hooks explicitly
+// if needed. Personal template's Discord notification hooks, session start
+// context script, config-protection, python-autoformat, strategic-compact,
+// pre-compact-save, and statusline-session invocations are all excluded
+// because their scripts are outside the company allowlist.
+//
+// Environment-specific sections that may need manual adjustment are marked with
+// "// ENV:" comments below.
+{
+  "cleanupPeriodDays": 99999,
+
+  // ENV: Adjust values per environment. CLAUDE_AUTOCOMPACT_PCT_OVERRIDE controls
+  // auto-compaction threshold (default 60%; 50% recommended for long sessions).
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"
+  },
+
+  "includeCoAuthoredBy": false,
+
+  "permissions": {
+    "allow": [
+      "Bash(uv run:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(ruff:*)",
+      "Bash(pyright:*)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(rm:*)",
+      "Bash(rm -rf:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)",
+      "Bash(git commit:--no-verify:*)",
+      "Bash(git commit:-n:*)",
+      "Read(nn.env)",
+      "Read(id_rsa)",
+      "Read(id_ed25519)",
+      "Read(**/*token*)",
+      "Read(**/*key*)",
+      "Write(.env*)",
+      "Write(**/secrets/**)",
+      "Bash(wget:*)",
+      "Bash(nc:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm remove:*)",
+      "Bash(psql:*)",
+      "Bash(mysql:*)",
+      "Bash(mongod:*)",
+      "mcp__supabase__execute_sql"
+    ]
+  },
+
+  // Company mode: hooks emptied. Personal template wired Stop/Notification
+  // (Discord webhook), SessionStart/PreToolUse/PostToolUse (session-start-context,
+  // config-protection, python-autoformat, strategic-compact, deny-check),
+  // and PreCompact (pre-compact-save). All target scripts under scripts/ or
+  // hooks/ live outside the company allowlist, so hooks must remain empty
+  // until a reviewed replacement is added explicitly.
+  "hooks": {},
+
+  // Company mode: statusLine removed. Personal template pointed at
+  // scripts/statusline-session.sh which is not part of the company allowlist.
+
+  // ENV: enabledPlugins omitted — configure via `claude plugins` CLI after install
+  // Each environment may have different plugins enabled.
+
+  "language": "日本語",
+  "alwaysThinkingEnabled": true
+
+  // ENV: Uncomment to skip the dangerous mode permission prompt (use with caution)
+  // "skipDangerousModePermissionPrompt": true
+}

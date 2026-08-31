@@ -1,0 +1,404 @@
+{
+  "name": "presentation-architect evals",
+  "description": "Test cases for presentation-architect. Each case names a slide/deck design task and enumerates expected_signals (patterns the skill should emit) and bad_signals (regressions the skill must NOT emit, especially generic AI-slide defaults such as forced 3-column card grids or decorative icons). Every case also carries `grading_rubric` (deterministic checks a subagent grader can apply) and `gold_reference_spec` (an acceptable spec YAML shape following references/spec-schema.md).",
+  "cases": [
+    {
+      "id": "case-1-quarterly-trend",
+      "input": "I have quarterly revenue for the last 4 quarters and want a slide that makes the growth trend obvious.",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "storyline_step_named_before_visual_grammar",
+        "visual_grammar_is_sequence_or_chart_with_annotation",
+        "primary_visual_is_line_chart_or_bar_chart",
+        "composition_focal_point_names_growth_direction_or_latest_value",
+        "one_message_field_per_slide",
+        "hero_metric_option_explicitly_evaluated_or_selected"
+      ],
+      "bad_signals": [
+        "visual_grammar_three_column_or_cards_grid",
+        "generic_icon_field_present",
+        "message_field_is_topic_label",
+        "decorative_accent_line_field_present"
+      ],
+      "notes": "Quantitative time series must resolve to a chart with the growth direction as focal point, not a table or three cards labelled Q1/Q2/Q3/Q4.",
+      "grading_rubric": {
+        "presentation_mode_present": "output has top-level key 'deck.presentation_mode' with value in {live, leave-behind, hybrid}",
+        "visual_grammar_correct": "slide's visual.grammar is one of {sequence, timeline, chart-with-annotation, hero-metric} and NOT in {matrix-2x2, part-to-whole, comparison}",
+        "primary_visual_matches": "slide's visual.primary_visual matches /line-chart|bar-chart|column-chart|hero-number/",
+        "focal_point_names_growth": "composition.focal_point mentions trend direction, latest quarter, or the growth number (regex: /growth|up|latest|Q4|trend|slope|arrow/i)",
+        "message_is_takeaway": "slide.message is a full sentence ending with '.' AND MUST NOT be a topic label (reject if matches /^(quarterly revenue|revenue overview|Q\\d)/i)",
+        "no_three_column_bleed": "output MUST NOT contain visual.grammar values in {three-column, cards-grid, three-cards} AND MUST NOT prescribe 4 equal cards for Q1-Q4"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"Revenue grew 34% across the last four quarters, with acceleration in Q4.\"\n  evidence:\n    type: quantitative-trend\n    data: {Q1: 4.2, Q2: 4.6, Q3: 5.1, Q4: 5.6}\n  visual:\n    grammar: chart-with-annotation\n    primary_visual: line-chart\n  composition:\n    focal_point: \"Q4 value with upward arrow annotation\"\n    reading_order: \"headline -> line -> Q4 callout\"\n    emphasis: \"Q4 point + growth arrow\"\n    supporting_text: \"one implication line\""
+    },
+    {
+      "id": "case-2-before-after",
+      "input": "Slide comparing processing time before and after the new pipeline: 28 minutes down to 9 minutes.",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "visual_grammar_is_before_after_or_comparison",
+        "primary_visual_is_paired_bars_or_horizontal_bar_comparison",
+        "composition_focal_point_names_after_value_or_delta",
+        "composition_emphasis_is_after_value_only_or_delta_only",
+        "output_spec_uses_exactly_two_elements_not_three"
+      ],
+      "bad_signals": [
+        "visual_grammar_three_column_or_cards_grid",
+        "third_column_or_middle_element_added",
+        "composition_emphasis_equal_across_before_and_after",
+        "generic_icon_field_present"
+      ],
+      "notes": "Two-item comparison must not be padded into 3 columns. Emphasis should sit on the after value / the delta.",
+      "grading_rubric": {
+        "visual_grammar_correct": "slide's visual.grammar in {before-after, comparison}",
+        "two_element_only": "evidence.data contains exactly 2 numeric entries (before and after) and no third series is invented",
+        "focal_point_is_after_or_delta": "composition.focal_point mentions the after value (9), the delta (-19 or -68% or 19 min), or 'after' (regex: /9\\s*min|-?19|-?68%|after/i)",
+        "emphasis_asymmetric": "composition.emphasis names ONLY after or delta (regex: /after|delta|-68/i) and MUST NOT read 'equal' or 'both'",
+        "no_third_column": "output MUST NOT include a middle/third comparison element (regex reject: /middle|third\\s+column|between|transition\\s+state/i inside visual or composition blocks)"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"The new pipeline cut processing time from 28 min to 9 min, a 68% reduction.\"\n  evidence:\n    type: quantitative-comparison\n    data: {before: 28, after: 9, unit: min}\n  visual:\n    grammar: before-after\n    primary_visual: paired-bars\n  composition:\n    focal_point: \"9 min / -68%\"\n    reading_order: \"headline -> before bar -> after bar -> delta callout\"\n    emphasis: \"after value only\"\n  avoid: [three equal cards, middle transition column, decorative icon]"
+    },
+    {
+      "id": "case-3-role-by-phase",
+      "input": "I want to show which role (BA, DS, SE) is primary in each project phase (planning, PoC, requirements, dev).",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "evidence_type_is_swimlane_or_matrix",
+        "visual_grammar_is_swimlane_or_matrix_2x2",
+        "primary_visual_is_swimlane_grid_or_heatmap",
+        "primary_role_marked_visually_distinct_from_supporting_in_composition"
+      ],
+      "bad_signals": [
+        "visual_grammar_three_column_or_cards_grid",
+        "three_role_cards_with_icons",
+        "flat_bullet_list_as_primary_visual",
+        "generic_icon_field_present"
+      ],
+      "notes": "Role x phase is a two-dimensional matrix, not three role cards. Primary vs supporting should be a visual weight, not a color-per-role rainbow.",
+      "grading_rubric": {
+        "visual_grammar_is_2d": "slide's visual.grammar in {swimlane, matrix-2x2} and MUST NOT be in {sequence, comparison, part-to-whole}",
+        "primary_visual_matches": "slide's visual.primary_visual matches /swimlane-grid|heatmap|matrix/",
+        "primary_vs_supporting_marked": "composition.emphasis or composition.notes distinguishes primary vs supporting roles (regex: /primary|filled|dark|bold/i AND /supporting|secondary|light|muted/i)",
+        "grid_dimensions_correct": "output states rows = roles (3) x cols = phases (4), or the transpose",
+        "no_three_role_cards": "output MUST NOT emit 3 sibling elements labeled BA/DS/SE with the same visual weight"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"BA leads planning and requirements; DS leads PoC; SE leads dev.\"\n  evidence:\n    type: swimlane\n    data:\n      rows: [BA, DS, SE]\n      cols: [planning, PoC, requirements, dev]\n      primary: {planning: BA, PoC: DS, requirements: BA, dev: SE}\n  visual:\n    grammar: swimlane\n    primary_visual: swimlane-grid\n  composition:\n    focal_point: \"the diagonal of primary cells\"\n    reading_order: \"phases left-to-right, roles top-to-bottom\"\n    emphasis: \"primary cells filled; supporting cells muted\""
+    },
+    {
+      "id": "case-4-three-independent-findings",
+      "input": "Three independent findings from user interviews, no order or dependency between them.",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "evidence_type_is_qualitative_or_case_example",
+        "visual_grammar_permits_three_column_because_semantically_parallel",
+        "each_column_message_or_headline_is_a_takeaway_sentence_not_a_topic_label",
+        "no_arrow_or_flow_between_columns"
+      ],
+      "bad_signals": [
+        "arrow_or_flow_connector_between_independent_items",
+        "generic_icon_per_column",
+        "topic_only_headline_per_column",
+        "decorative_accent_line_field_present"
+      ],
+      "notes": "This is the case where 3-column IS correct -- but only because the items are truly independent. Each column still needs a takeaway, not a topic label.",
+      "grading_rubric": {
+        "three_column_permitted_here": "slide's visual.grammar may be 'three-column' or 'cards-grid' here (this is the ONE case where it is licensed)",
+        "each_column_has_takeaway": "each of the 3 sub-elements has a headline that is a full sentence (regex: contains verb + ends with '.') and NOT a bare topic (reject: single noun phrase < 4 words)",
+        "no_arrows_between": "output MUST NOT include arrow, chevron, flow, or connector between the three columns (regex reject inside layout: /arrow|chevron|->|flow|connector/i)",
+        "independence_stated": "composition or notes explicitly states the three items are independent / parallel / no ordering (regex: /independent|parallel|no order|no dependency/i)",
+        "no_generic_icons": "output MUST NOT add generic icons (lightbulb, gear, chart) per column"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"Three independent findings from user interviews shape the roadmap.\"\n  evidence:\n    type: qualitative-quote\n    data:\n      findings:\n        - \"Users skip onboarding when task pressure is high.\"\n        - \"Search is preferred over browse 3:1 in daily use.\"\n        - \"Notifications are muted within 2 weeks by 60% of users.\"\n  visual:\n    grammar: assertion-plus-evidence\n    primary_visual: three-column-cards\n  composition:\n    focal_point: \"three headline sentences of equal weight\"\n    reading_order: \"left to right, order not meaningful\"\n    notes: \"items are independent; no connectors\""
+    },
+    {
+      "id": "case-5-three-sequential-steps",
+      "input": "Three sequential steps: identify problem, analyze cause, decide countermeasure.",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "visual_grammar_is_sequence_or_causal_chain",
+        "primary_visual_is_chevron_flow_or_arrow_boxes_or_horizontal_process",
+        "composition_indicates_direction_or_current_position",
+        "output_spec_rejects_three_equal_cards_explicitly_in_avoid"
+      ],
+      "bad_signals": [
+        "visual_grammar_three_column_or_cards_grid",
+        "three_cards_with_icons_no_arrows",
+        "equal_visual_weight_ignoring_order",
+        "generic_icon_field_present"
+      ],
+      "notes": "Sequential does NOT collapse into three cards. The order must be visible in the layout itself (arrows / chevrons / left-to-right flow).",
+      "grading_rubric": {
+        "visual_grammar_correct": "slide's visual.grammar in {sequence, causal-chain} and MUST NOT be in {three-column, cards-grid}",
+        "primary_visual_shows_order": "slide's visual.primary_visual matches /chevron|arrow-boxes|horizontal-process|flow/",
+        "direction_visible": "composition.reading_order or composition.notes mentions direction (regex: /left to right|LTR|arrow|-> |flows|next step/i)",
+        "avoid_list_names_three_cards": "slide.avoid array (or composition.notes) explicitly rejects 'three equal cards' or 'three cards without arrows' (regex: /three (equal )?cards|3 cards/i inside avoid)",
+        "no_generic_icons": "output MUST NOT include a per-step generic icon"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"The team follows three sequential steps: identify, analyze, decide.\"\n  evidence:\n    type: causal\n    data:\n      steps: [identify problem, analyze cause, decide countermeasure]\n  visual:\n    grammar: sequence\n    primary_visual: chevron-flow\n  composition:\n    focal_point: \"the arrow spanning all three steps\"\n    reading_order: \"left to right\"\n    emphasis: \"current step (analyze) filled, others outlined\"\n  avoid: [three equal cards, cards without arrows, icons per step]"
+    },
+    {
+      "id": "case-6-single-strong-number",
+      "input": "The one thing I want people to remember: our churn dropped to 1.2%.",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "visual_grammar_is_hero_metric",
+        "primary_visual_is_hero_number",
+        "composition_focal_point_is_the_number_1_2_percent",
+        "composition_supporting_text_is_minimal_one_line_or_less",
+        "one_message_field_per_slide"
+      ],
+      "bad_signals": [
+        "chart_added_without_series_to_compare",
+        "three_columns_of_secondary_stats",
+        "generic_icon_field_present",
+        "decorative_accent_line_field_present"
+      ],
+      "notes": "Single dominant insight resolves to hero-metric composition. Do not surround it with unrelated KPIs to fill the slide.",
+      "grading_rubric": {
+        "visual_grammar_hero": "slide's visual.grammar == 'hero-metric' AND primary_visual == 'hero-number'",
+        "focal_point_is_the_number": "composition.focal_point contains '1.2' or '1.2%' (substring match)",
+        "supporting_minimal": "composition.supporting_text length <= 1 line (roughly <= 120 chars) OR is explicitly labeled 'minimal' / 'one line'",
+        "no_padded_kpis": "output MUST NOT include additional unrelated stats or a 3-column KPI grid (regex reject: /(3|three)\\s+(cards|columns|stats)/i)",
+        "no_chart_without_series": "output MUST NOT include a chart primary_visual unless there is a comparison series (there isn't one here)"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"Churn dropped to 1.2%, the lowest in company history.\"\n  evidence:\n    type: quantitative-trend\n    data: {current_churn: 1.2, unit: percent}\n  visual:\n    grammar: hero-metric\n    primary_visual: hero-number\n  composition:\n    focal_point: \"1.2%\"\n    reading_order: \"number -> one-line context\"\n    supporting_text: \"one line: lowest in company history\"\n    emphasis: \"the number dominates the slide\"\n  avoid: [decorative icon, extra KPIs, chart without series]"
+    },
+    {
+      "id": "case-7-research-methodology",
+      "input": "Overview slide of our research methodology: data collection, feature engineering, model training, evaluation, deployment.",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "visual_grammar_is_sequence_or_hierarchy",
+        "primary_visual_is_process_flow_or_architecture_diagram",
+        "step_labels_are_the_specific_input_terms_not_generic_placeholders",
+        "flow_direction_visible_in_composition"
+      ],
+      "bad_signals": [
+        "visual_grammar_three_column_or_cards_grid",
+        "five_generic_cards_with_icons",
+        "topic_only_message",
+        "decorative_accent_line_field_present"
+      ],
+      "notes": "A pipeline is a flow, not five parallel cards. Architecture / process diagram with visible direction is the correct grammar.",
+      "grading_rubric": {
+        "visual_grammar_correct": "slide's visual.grammar in {sequence, hierarchy, causal-chain} and MUST NOT be in {three-column, cards-grid}",
+        "primary_visual_shows_pipeline": "slide's visual.primary_visual matches /process-flow|architecture-diagram|pipeline|arrow-boxes|chevron/",
+        "step_labels_specific": "output preserves all 5 input step labels verbatim OR near-verbatim (data collection, feature engineering, model training, evaluation, deployment) and does NOT substitute generic labels like 'Step 1..5'",
+        "flow_direction_stated": "composition.reading_order or composition.notes mentions flow direction (regex: /left to right|LTR|top to bottom|flows through|end to end/i)",
+        "no_five_generic_cards": "output MUST NOT emit 5 equal-weight cards with icons and no connectors"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: context\n  message: \"Our methodology is a five-stage pipeline from data collection to deployment.\"\n  evidence:\n    type: causal\n    data:\n      stages: [data collection, feature engineering, model training, evaluation, deployment]\n  visual:\n    grammar: sequence\n    primary_visual: process-flow\n  composition:\n    focal_point: \"the pipeline arrow spanning all five stages\"\n    reading_order: \"left to right\"\n    emphasis: \"connectors between stages are visible\"\n  avoid: [five equal cards, generic icons per stage]"
+    },
+    {
+      "id": "case-8-massive-detail",
+      "input": "I have 30 pages of raw analysis, appendices, tables. Make it into a deck for the board.",
+      "expected_signals": [
+        "mode_check_triggered_before_composition",
+        "deck_presentation_mode_is_leave_behind_or_hybrid",
+        "visual_grammar_hierarchy_used_for_dense_slides",
+        "appendix_split_recommendation_present",
+        "handoff_to_deck_storyline_recommended_if_narrative_missing",
+        "text_density_calibrated_to_mode_not_stripped_by_default"
+      ],
+      "bad_signals": [
+        "deck_presentation_mode_is_live",
+        "visual_grammar_three_column_or_cards_grid",
+        "collapses_30_pages_into_5_slides_without_hierarchy",
+        "generic_icon_field_present"
+      ],
+      "notes": "Board handoff is typically leave-behind or hybrid. Do NOT apply live-mode 'reduce text' default. Hierarchy + appendix split is the correct move.",
+      "grading_rubric": {
+        "mode_correct": "deck.presentation_mode in {leave-behind, hybrid} and MUST NOT be 'live'",
+        "hierarchy_grammar_used": "at least one slide has visual.grammar == 'hierarchy' OR composition explicitly names hierarchical structure",
+        "appendix_split_recommended": "output includes at least one slide with role == 'appendix' OR text 'appendix split' / 'move to appendix'",
+        "text_density_not_stripped": "output MUST NOT apply live-mode text reduction defaults (regex reject: /minimize text|strip text|remove body copy/i)",
+        "storyline_handoff_conditional": "if the source lacks a narrative arc, output names 'deck-storyline' as a prerequisite handoff"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: leave-behind\n  audience: \"board\"\n  desired_outcome: \"reader can self-serve the argument and drill into detail\"\nslide:\n  slide_number: 1\n  role: opening\n  message: \"Executive summary of the 30-page analysis.\"\n  visual:\n    grammar: hierarchy\n    primary_visual: tree-diagram\n  composition:\n    focal_point: \"top-of-tree headline claim\"\n    reading_order: \"summary -> section headers -> section pages\"\n    supporting_text: \"full sentences allowed; footnotes encouraged\"\nslide:\n  slide_number: 12\n  role: appendix\n  message: \"Detailed tables and derivations.\"\n  avoid: [live-mode text reduction, forcing single-takeaway on backup tables]\nnotes: \"If source lacks a narrative arc, hand off to deck-storyline first.\""
+    },
+    {
+      "id": "case-9-live-sales-pitch",
+      "input": "A 5-minute live pitch to a prospective enterprise customer, projected in a meeting room.",
+      "expected_signals": [
+        "deck_presentation_mode_is_live",
+        "text_density_minimal_per_slide",
+        "hero_visuals_prioritized_in_primary_visual",
+        "font_size_recommendation_large_or_default_calibrated_to_live",
+        "one_message_field_per_slide",
+        "storyline_before_slides_named"
+      ],
+      "bad_signals": [
+        "dense_paragraph_body_text",
+        "footnote_stack",
+        "table_of_15_rows_on_a_single_slide",
+        "topic_only_message"
+      ],
+      "notes": "Live mode: speaker is the channel. Slides support, do not compete. Dense body text under a live speaker is the failure mode being tested.",
+      "grading_rubric": {
+        "mode_is_live": "deck.presentation_mode == 'live' (exact match)",
+        "supporting_text_minimal": "every slide's composition.supporting_text is 1 line or fewer, OR explicitly marked 'minimal'",
+        "no_dense_body": "output MUST NOT include paragraphs > 40 words in any slide body (regex reject: any single supporting_text or body field with >= 40 words)",
+        "no_footnote_stack": "output MUST NOT include a footnote stack (regex reject: /footnote\\d|see \\[\\d+\\]|\\*\\* footnote/i)",
+        "hero_visual_present": "at least one slide has visual.primary_visual in {hero-number, callout-annotation, chart-with-annotation, line-chart, image}",
+        "storyline_step_named": "output references 'storyline' or 'deck-storyline' as a completed or required prior step"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\n  time_budget: \"5 min live\"\n  audience: \"prospective enterprise customer\"\nslide:\n  slide_number: 1\n  role: opening\n  message: \"We cut your peer's onboarding time from 6 weeks to 4 days.\"\n  visual:\n    grammar: hero-metric\n    primary_visual: hero-number\n  composition:\n    focal_point: \"4 days\"\n    supporting_text: \"peer company, same industry\"\nslide:\n  slide_number: 2\n  role: evidence\n  message: \"The lever is our pre-built integration layer.\"\n  visual:\n    grammar: chart-with-annotation\n    primary_visual: callout-annotation\n  composition:\n    supporting_text: \"one line only\"\n  avoid: [dense body text, footnote stack, tables]"
+    },
+    {
+      "id": "case-10-board-handoff",
+      "input": "A 30-page board document that will be circulated by email -- no one will present it live.",
+      "expected_signals": [
+        "deck_presentation_mode_is_leave_behind",
+        "text_density_higher_permitted",
+        "full_sentences_allowed_in_composition",
+        "appendix_and_footnote_use_encouraged_when_supporting",
+        "each_slide_self_contained_stated"
+      ],
+      "bad_signals": [
+        "deck_presentation_mode_is_live",
+        "single_takeaway_per_slide_enforced_when_reader_needs_backup_data",
+        "removes_footnotes_because_they_look_dense",
+        "generic_icon_field_present"
+      ],
+      "notes": "Leave-behind mode: reader consumes the deck alone. Denser text and footnotes are correct here. The skill must not apply live-mode defaults.",
+      "grading_rubric": {
+        "mode_is_leave_behind": "deck.presentation_mode == 'leave-behind' (exact match)",
+        "full_sentences_allowed": "composition.supporting_text OR composition.notes states full sentences are permitted (regex: /full sentence|complete sentence|dense text ok/i)",
+        "self_contained_stated": "output states each slide is self-contained without a speaker (regex: /self-contained|standalone|no speaker|reader alone/i)",
+        "footnotes_permitted": "output permits or encourages footnotes when supporting (regex: /footnote/i AND NOT /remove footnote|no footnote/i)",
+        "no_live_defaults_applied": "output MUST NOT enforce single-takeaway-per-slide or strip supporting data"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: leave-behind\n  audience: \"board (async readers)\"\n  desired_outcome: \"each reader reaches the same conclusion without a speaker\"\nslide:\n  slide_number: 1\n  role: opening\n  message: \"Board summary: three decisions requested.\"\n  composition:\n    focal_point: \"summary of asks\"\n    supporting_text: \"full sentences; each slide standalone\"\n    notes: \"footnotes permitted where they add provenance\"\nslide:\n  slide_number: 2\n  role: evidence\n  message: \"Q3 revenue tracked plan within 2%.\"\n  visual:\n    grammar: chart-with-annotation\n    primary_visual: line-chart\n  composition:\n    supporting_text: \"3-4 sentences of context are appropriate here\"\n  avoid: [stripping text to live-mode defaults]"
+    },
+    {
+      "id": "case-11-variety-for-variety",
+      "input": "Please make each slide look different so the deck doesn't feel monotonous.",
+      "expected_signals": [
+        "skill_rejects_variety_for_its_own_sake_explicitly",
+        "reuses_layout_when_semantic_structure_repeats_stated",
+        "varies_only_where_semantic_shape_actually_changes_stated",
+        "explains_that_layout_repetition_aids_comprehension"
+      ],
+      "bad_signals": [
+        "invents_different_layout_per_slide_without_semantic_basis",
+        "adds_decorative_variation_gradients_stripes_shapes",
+        "uses_different_chart_types_for_the_same_data_shape"
+      ],
+      "notes": "Anti-pattern check. The skill should push back on 'variety for variety'. Same semantic structure = same layout. Variety comes from content, not decoration.",
+      "grading_rubric": {
+        "explicit_rejection": "output contains an explicit refusal or reframing of the 'make it varied' request (regex: /variety.*(reject|not|push back|instead|decoration)/i)",
+        "semantic_consistency_principle_stated": "output states that same semantic structure -> same layout (regex: /same (semantic|structure|shape).*(same|repeat) layout/i)",
+        "no_decorative_variation": "output MUST NOT recommend gradients, stripes, decorative shapes, or per-slide color themes",
+        "no_chart_swap_for_same_data": "output MUST NOT recommend using different chart types for identically-shaped data",
+        "comprehension_argument_present": "output notes that layout repetition aids comprehension / reduces cognitive load"
+      },
+      "gold_reference_spec": "This request should be pushed back on. Variety for its own sake harms comprehension: readers use layout repetition as a signal that slides share semantic structure.\n\nRule: same semantic shape -> same layout. Vary layout ONLY when the underlying relationship changes (e.g., a comparison slide vs a hero-metric slide).\n\nRecommended spec output:\ndeck:\n  presentation_mode: live\nnotes: |\n  - Reuse the same layout for all evidence slides of the same grammar.\n  - Vary layout ONLY across grammar changes (comparison -> hero -> sequence).\n  - Do NOT add decorative variation (gradients, stripes, per-slide accents).\n  - Do NOT swap chart types for the same data shape.\navoid: [decorative variation, per-slide themes, chart type swaps for identical data]"
+    },
+    {
+      "id": "case-12-part-to-whole",
+      "input": "Revenue breakdown by product line: consulting 46%, SaaS 24%, training 16%, other 14%.",
+      "expected_signals": [
+        "deck_presentation_mode_field_present",
+        "evidence_type_is_composition",
+        "visual_grammar_is_part_to_whole",
+        "primary_visual_is_stacked_bar_or_pie_chart_or_100_stacked_bar",
+        "composition_emphasis_names_largest_segment_consulting",
+        "secondary_segments_muted_or_desaturated_in_composition"
+      ],
+      "bad_signals": [
+        "visual_grammar_three_column_or_cards_grid",
+        "rainbow_palette_one_color_per_segment_with_equal_saturation",
+        "generic_icon_per_segment",
+        "topic_only_message"
+      ],
+      "notes": "Part-to-whole must land on a composition chart. All-segments-equally-bright is the AI-default failure; the dominant segment should carry the emphasis.",
+      "grading_rubric": {
+        "visual_grammar_correct": "slide's visual.grammar == 'part-to-whole'",
+        "primary_visual_matches": "slide's visual.primary_visual matches /stacked-bar|pie-chart|100-stacked-bar/",
+        "consulting_emphasized": "composition.emphasis or composition.focal_point names consulting or the largest segment (regex: /consulting|46|largest/i)",
+        "others_muted": "composition mentions muted / desaturated / lighter treatment for non-dominant segments (regex: /mut|desaturat|light|grey|gray/i)",
+        "no_rainbow": "output MUST NOT recommend a rainbow palette with equal saturation for all segments (regex reject: /rainbow|equal saturation|color per segment/i unless explicitly negated)"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: live\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"Consulting drives nearly half of revenue; SaaS is the second lever at 24%.\"\n  evidence:\n    type: composition\n    data: {consulting: 46, SaaS: 24, training: 16, other: 14}\n  visual:\n    grammar: part-to-whole\n    primary_visual: 100-stacked-bar\n  composition:\n    focal_point: \"consulting segment (46%)\"\n    reading_order: \"largest segment first, then next\"\n    emphasis: \"consulting fully saturated; SaaS medium; training/other desaturated grey\"\n  avoid: [rainbow palette, equal color weight, generic icons per segment]"
+    },
+    {
+      "id": "case-13-critique-existing-deck",
+      "input": "Here's my existing 12-slide deck for tomorrow's board meeting. Can you critique it and tell me what to fix?",
+      "expected_signals": [
+        "review_rubric_reference_invoked",
+        "critique_organized_per_slide_or_per_rubric_dimension",
+        "each_finding_names_specific_slide_and_specific_issue",
+        "storyline_creation_skipped_because_deck_already_exists",
+        "handoff_to_deck_storyline_named_only_if_argument_is_broken"
+      ],
+      "bad_signals": [
+        "regenerates_full_deck_from_scratch",
+        "produces_generic_slide_advice_not_grounded_in_the_input_deck",
+        "critique_only_visual_ignores_message_and_focal_point_dimensions",
+        "storyline_template_filled_when_deck_already_exists"
+      ],
+      "notes": "Boundary case: critique mode. Skill must invoke references/review-rubric.md and produce per-slide findings, not regenerate. Storyline is skipped unless the argument itself is broken.",
+      "grading_rubric": {
+        "review_rubric_invoked": "output references review-rubric.md OR uses its dimensions (message clarity, visual grammar match, focal point, mode calibration, layout consistency)",
+        "per_slide_findings": "output has at least 3 findings each tied to a specific slide number or slide role (regex: /slide\\s*\\d+|slide\\s+\\d/i must appear >= 3 times)",
+        "not_regenerated": "output MUST NOT contain a full deck spec starting at slide 1 as if from scratch (heuristic: output is critique-shaped, not spec-shaped)",
+        "findings_have_fix": "each finding pairs an issue with a concrete fix (regex: each finding block contains both 'issue' AND 'fix' OR 'change to' OR 'replace with')",
+        "storyline_conditional": "output only recommends deck-storyline if it identifies a broken governing thought / missing argument, not by default"
+      },
+      "gold_reference_spec": "critique:\n  method: review-rubric.md (5 dimensions per slide)\n  dimensions_used: [message clarity, visual grammar match, focal point, mode calibration, layout consistency]\nfindings:\n  - slide: 1\n    dimension: message clarity\n    issue: \"title is a topic label 'Q3 results', not a takeaway\"\n    fix: \"replace with 'Q3 revenue beat plan by 8%, driven by SaaS'\"\n  - slide: 4\n    dimension: visual grammar match\n    issue: \"three sequential steps rendered as three equal cards without arrows\"\n    fix: \"change to chevron-flow (grammar: sequence)\"\n  - slide: 7\n    dimension: focal point\n    issue: \"chart has no annotation; eye lands nowhere in particular\"\n    fix: \"add callout on Q3 point and desaturate other quarters\"\nrecommendation_summary:\n  - fix 3 slide-level issues above\n  - argument arc is coherent; deck-storyline handoff NOT needed"
+    },
+    {
+      "id": "case-14-single-slide-request",
+      "input": "Just make me a 2x2 matrix slide for cost vs impact of these five initiatives.",
+      "expected_signals": [
+        "storyline_creation_step_skipped_or_marked_not_applicable",
+        "deck_presentation_mode_field_still_present_defaulted_or_asked",
+        "visual_grammar_is_matrix_2x2",
+        "primary_visual_is_matrix_or_scatter",
+        "axes_named_cost_vs_impact_in_composition",
+        "initiatives_placed_by_the_two_dimensions_not_listed_flat"
+      ],
+      "bad_signals": [
+        "storyline_template_filled_for_a_single_slide",
+        "governing_question_forced_when_task_is_atomic",
+        "visual_grammar_three_column_or_cards_grid",
+        "initiatives_listed_as_flat_bullets"
+      ],
+      "notes": "Boundary case: single-slide atomic task. Skill should skip the storyline step and go directly to spec output. Mode still needs to be named (may default to hybrid) or asked.",
+      "grading_rubric": {
+        "no_storyline_generated": "output MUST NOT include a filled storyline table with role/beat rows (this is a single-slide request)",
+        "mode_still_present": "deck.presentation_mode is still declared (may be defaulted with a note) OR output asks the user which mode",
+        "visual_grammar_2x2": "slide's visual.grammar == 'matrix-2x2' and primary_visual in {matrix, scatter, matrix-2x2-grid}",
+        "axes_named": "composition.notes or evidence.data names cost as one axis and impact as the other (both substrings 'cost' and 'impact' present in composition or evidence block)",
+        "items_placed_by_dimensions": "evidence.data or composition places each of the 5 initiatives at a (cost, impact) coordinate, NOT a flat bullet list"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: hybrid  # defaulted; single-slide task\n  notes: \"storyline step skipped: atomic single-slide task\"\nslide:\n  slide_number: 1\n  role: evidence\n  message: \"Initiatives A and D are high-impact, low-cost -- do first.\"\n  evidence:\n    type: matrix\n    data:\n      axes: {x: cost, y: impact}\n      items:\n        - {name: A, cost: low, impact: high}\n        - {name: B, cost: high, impact: high}\n        - {name: C, cost: low, impact: low}\n        - {name: D, cost: low, impact: high}\n        - {name: E, cost: high, impact: low}\n  visual:\n    grammar: matrix-2x2\n    primary_visual: matrix\n  composition:\n    focal_point: \"upper-left quadrant containing A and D\"\n    reading_order: \"quadrant labels -> items in each quadrant\"\n    notes: \"x-axis: cost (left = low); y-axis: impact (top = high)\"\n  avoid: [flat bullet list of 5 items, three-column layout]"
+    },
+    {
+      "id": "case-15-invalid-or-ambiguous-mode",
+      "input": "We'll present this async — team will read the deck on their own time. Build me the slides.",
+      "expected_signals": [
+        "skill_recognizes_async_maps_to_leave_behind_or_hybrid_not_live",
+        "mode_clarification_offered_between_leave_behind_and_hybrid",
+        "leave_behind_defaults_applied_after_clarification",
+        "text_density_higher_permitted",
+        "self_contained_per_slide_stated"
+      ],
+      "bad_signals": [
+        "deck_presentation_mode_is_live",
+        "mode_defaulted_silently_without_naming_the_choice",
+        "async_treated_as_live_reducing_text_by_default",
+        "single_takeaway_enforced_per_slide_when_reader_needs_backup"
+      ],
+      "notes": "Boundary case: input uses 'async' which is not one of the three enum modes. Skill MUST NOT silently default to live; should map to leave-behind (default) or clarify hybrid vs leave-behind.",
+      "grading_rubric": {
+        "mode_not_live": "deck.presentation_mode MUST NOT equal 'live' (regex reject: presentation_mode:\\s*live)",
+        "mode_is_leave_behind_or_hybrid": "deck.presentation_mode in {leave-behind, hybrid} (with a note that async maps to one of these)",
+        "clarification_offered_or_note_present": "output either asks the user to pick leave-behind vs hybrid OR states which was chosen and why (regex: /leave-behind|hybrid/i AND /async|self-serve|no live/i)",
+        "text_density_calibrated": "composition.supporting_text permits full sentences OR output states higher density is appropriate for async",
+        "no_live_defaults": "output MUST NOT strip text or enforce a single takeaway per slide when the reader may need backup data"
+      },
+      "gold_reference_spec": "deck:\n  presentation_mode: leave-behind  # async input mapped to leave-behind; hybrid available if some slides get a walkthrough later\n  notes: \"'async' is not a valid mode value; leave-behind selected because no speaker will be present. If some readers will get a walkthrough, switch to hybrid.\"\nslide:\n  slide_number: 1\n  role: opening\n  message: \"Async board update: three items need input by Friday.\"\n  composition:\n    focal_point: \"three asks summarized\"\n    supporting_text: \"full sentences; each slide standalone\"\n    notes: \"reader consumes alone; self-contained per slide\"\nslide:\n  slide_number: 2\n  role: evidence\n  message: \"Item 1: onboarding completion rate dropped from 78% to 61%.\"\n  visual:\n    grammar: chart-with-annotation\n    primary_visual: line-chart\n  composition:\n    supporting_text: \"3-4 sentences of context and provenance are appropriate\"\n  avoid: [stripping text, forcing single takeaway on backup slides]"
+    }
+  ]
+}

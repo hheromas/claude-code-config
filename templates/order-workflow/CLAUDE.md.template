@@ -1,0 +1,44 @@
+# CLAUDE.md - {{PROJECT_NAME}} プロジェクト
+
+## プロジェクト概要
+
+{{PROJECT_NAME}} は{{PROJECT_DESCRIPTION}}。ログと指示を別々のgitリポジトリで管理。
+
+---
+
+## Workspace 絶対パス定義（最重要）
+
+**全てのコマンドは絶対パスを使用すること。** 詳細は `.claude/rules/00-paths.md` を参照。
+
+**クイックリファレンス:**
+- `PROJECT_ROOT="{{PROJECT_ROOT}}"`
+
+---
+
+## ディレクトリ構造（概要）
+
+order/ 配下にタスクフォルダを作成し、phases/ で作業を管理。
+詳細は `.claude/rules/01-structure.md` を参照。
+
+---
+
+## rules ファイル一覧
+
+| ファイル | 内容 |
+|---------|------|
+| 00-paths.md | パス定義・Git運用 |
+| 01-structure.md | タスク構造・フォルダ規約 |
+| 02-task-workflow.md | タスクワークフロー |
+| 03-tools.md | ツール使用ガイド |
+
+## skills 一覧
+
+特定タスク用のスキル（`/skill-name` で呼び出し）:
+
+| スキル | 内容 |
+|--------|------|
+| /self-critique | SC-3R 自己批評・エビデンス評価 |
+| /task-init | タスクフォルダ作成・命名・テンプレート |
+| /reorganize | ファイル再編成ワークフロー |
+| /ai-review | AI レビューオーケストレーション |
+| /setup-order-workflow | order ワークフロー初期セットアップ |
